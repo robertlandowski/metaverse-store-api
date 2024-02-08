@@ -47,6 +47,19 @@ const getShops = async () => {
   return rows;
 };
 
+const addBusinessOwner = async (name, contactInfo) => {
+  const { rows } = await pool.query(
+    "INSERT INTO business_owners (name, contact_info) VALUES ($1, $2) RETURNING *",
+    [name, contactInfo]
+  );
+  return rows[0];
+};
+
+const getBusinessOwners = async () => {
+  const { rows } = await pool.query("SELECT * FROM business_owners");
+  return rows;
+};
+
 module.exports = {
   addAdmin,
   getAllAdmins,
@@ -54,4 +67,6 @@ module.exports = {
   updateShop,
   deleteShop,
   getShops,
+  addBusinessOwner,
+  getBusinessOwners,
 };
