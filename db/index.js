@@ -64,6 +64,31 @@ const getBusinessOwners = async () => {
   return rows;
 };
 
+const banBusinessOwnerAndUpdateBookings = async (ownerId, isBanned) => {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const updateOwnerStatus = await client.query(
+      "UPDATE business_owners SET is_banned = $1 WHERE owner_id = $2 RETURNING *",
+      [isBanned, ownerId]
+    );
+
+    if (isBanned) {
+      await client.query("DELETE FROM bookings WHERE owner_id = $1", [ownerId]);
+    }
+
+    await client.query("COMMIT");
+    return updateOwnerStatus.rows[0];
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
 const addBooking = async ({ shopId, ownerId, startDate, endDate }) => {
   const { rows } = await pool.query(
     `INSERT INTO bookings (shop_id, owner_id, start_date, end_date)
@@ -107,6 +132,7 @@ module.exports = {
   getShops,
   addBusinessOwner,
   getBusinessOwners,
+  banBusinessOwnerAndUpdateBookings,
   addBooking,
   getBookings,
   updateBooking,
