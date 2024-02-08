@@ -36,6 +36,10 @@ const updateShop = async (shopId, name, description) => {
 };
 
 const deleteShop = async (shopId) => {
+  const bookings_deletion = await pool.query(
+    "DELETE FROM bookings WHERE shop_id = $1",
+    [shopId]
+  );
   const result = await pool.query("DELETE FROM shops WHERE shop_id = $1", [
     shopId,
   ]);
