@@ -60,6 +60,40 @@ const getBusinessOwners = async () => {
   return rows;
 };
 
+const addBooking = async ({ shopId, ownerId, startDate, endDate }) => {
+  const { rows } = await pool.query(
+    `INSERT INTO bookings (shop_id, owner_id, start_date, end_date)
+     VALUES ($1, $2, $3, $4)
+     RETURNING *;`,
+    [shopId, ownerId, startDate, endDate]
+  );
+  return rows[0];
+};
+
+const getBookings = async () => {
+  const { rows } = await pool.query("SELECT * FROM bookings;");
+  return rows;
+};
+
+const updateBooking = async (bookingId, { startDate, endDate }) => {
+  const { rows } = await pool.query(
+    `UPDATE bookings
+     SET start_date = $2, end_date = $3
+     WHERE booking_id = $1
+     RETURNING *;`,
+    [bookingId, startDate, endDate]
+  );
+  return rows[0];
+};
+
+const deleteBooking = async (bookingId) => {
+  const result = await pool.query(
+    "DELETE FROM bookings WHERE booking_id = $1;",
+    [bookingId]
+  );
+  return result.rowCount;
+};
+
 module.exports = {
   addAdmin,
   getAllAdmins,
@@ -69,4 +103,8 @@ module.exports = {
   getShops,
   addBusinessOwner,
   getBusinessOwners,
+  addBooking,
+  getBookings,
+  updateBooking,
+  deleteBooking,
 };
