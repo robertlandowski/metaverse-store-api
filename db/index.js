@@ -89,14 +89,40 @@ const banBusinessOwnerAndUpdateBookings = async (ownerId, isBanned) => {
   }
 };
 
-const addBooking = async ({ shopId, ownerId, startDate, endDate }) => {
-  const { rows } = await pool.query(
-    `INSERT INTO bookings (shop_id, owner_id, start_date, end_date)
-     VALUES ($1, $2, $3, $4)
-     RETURNING *;`,
-    [shopId, ownerId, startDate, endDate]
-  );
-  return rows[0];
+const addBooking = async ({ ownerId, shopId, startDate, endDate }) => {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const { rows: ownerRows } = await client.query(
+      "SELECT is_banned FROM business_owners WHERE owner_id = $1",
+      [ownerId]
+    );
+    if (ownerRows.length === 0) throw new Error("Business owner not found.");
+    if (ownerRows[0].is_banned) throw new Error("Business owner is banned.");
+
+    const { rows: bookingRows } = await client.query(
+      `SELECT 1 FROM bookings 
+       WHERE shop_id = $1 AND NOT (end_date <= $2 OR start_date >= $3)`,
+      [shopId, startDate, endDate]
+    );
+    if (bookingRows.length > 0)
+      throw new Error("Booking dates overlap with an existing booking.");
+
+    const { rows: newBookingRows } = await client.query(
+      "INSERT INTO bookings (owner_id, shop_id, start_date, end_date) VALUES ($1, $2, $3, $4) RETURNING *",
+      [ownerId, shopId, startDate, endDate]
+    );
+
+    await client.query("COMMIT");
+    return newBookingRows[0];
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 const getBookings = async () => {

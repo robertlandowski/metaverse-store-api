@@ -7,21 +7,31 @@ const {
 } = require("../db");
 const router = express.Router();
 
-router.post("/", async (req, res) => {
-  try {
-    const newBooking = await addBooking(req.body); // Expecting { shopId, ownerId, startDate, endDate }
-    res.status(201).json(newBooking);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 router.get("/", async (req, res) => {
   try {
     const bookings = await getBookings();
     res.json(bookings);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/", async (req, res) => {
+  try {
+    const newBooking = await addBooking(req.body);
+    res.status(201).json(newBooking);
+  } catch (error) {
+    if (
+      error.message === "Business owner not found." ||
+      error.message === "Business owner is banned."
+    ) {
+      return res.status(403).json({ error: error.message });
+    }
+    if (error.message === "Booking dates overlap with an existing booking.") {
+      return res.status(409).json({ error: error.message });
+    }
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
