@@ -14,4 +14,9 @@ const addAdmin = async (username, email, passwordHash) => {
   return result.rows[0];
 };
 
-module.exports = { addAdmin };
+const getAllAdmins = async () => {
+  const result = await pool.query("SELECT * FROM admins");
+  return result.rows;
+};
+
+module.exports = { addAdmin, getAllAdmins };

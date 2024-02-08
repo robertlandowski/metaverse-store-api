@@ -1,6 +1,16 @@
 const express = require("express");
 const router = express.Router();
-const { addAdmin } = require("../db");
+const { addAdmin, getAllAdmins } = require("../db");
+
+router.get("/", async (req, res) => {
+  try {
+    const admins = await getAllAdmins();
+    res.json(admins);
+  } catch (error) {
+    console.error("Error retrieving admins:", error.message);
+    res.status(500).send("Server error while retrieving admins.");
+  }
+});
 
 router.post("/register", async (req, res) => {
   try {
